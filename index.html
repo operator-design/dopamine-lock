@@ -12,6 +12,7 @@
             --text-main: #ffffff;
             --text-dim: #a1a1aa;
             --accent: #5e5ce6;
+            --accent-glow: rgba(94, 92, 230, 0.4);
             --danger: #ff453a;
         }
 
@@ -24,42 +25,76 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .view { display: none; height: 100%; flex-direction: column; padding: 2rem; }
         .view.active { display: flex; }
 
-        h1 { font-size: 2rem; margin: 0; }
-        .subtitle { color: var(--text-dim); margin-bottom: 2rem; }
+        h1 { font-size: 1.5rem; margin: 0; letter-spacing: -1px; }
+        .subtitle { color: var(--text-dim); margin-bottom: 2rem; font-size: 0.9rem; }
 
-        .card { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; margin-bottom: 1rem; }
+        .card { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; margin-bottom: 1rem; border: 1px solid #27272a; }
         
         .btn { 
-            background: var(--accent); color: white; border: none; padding: 1rem; 
-            border-radius: 12px; font-weight: 600; font-size: 1rem;
-            cursor: pointer; transition: 0.2s;
+            background: var(--accent); color: white; border: none; padding: 1.25rem; 
+            border-radius: 16px; font-weight: 600; font-size: 1rem;
+            cursor: pointer; transition: 0.3s;
+            width: 100%; box-shadow: 0 4px 12px var(--accent-glow);
         }
-        .btn:active { transform: scale(0.98); }
-        .btn-secondary { background: #27272a; }
-
-        /* Dashboard */
-        .streak { font-size: 3rem; font-weight: 700; }
+        .btn:active { transform: scale(0.97); }
+        .btn-secondary { background: #27272a; color: var(--text-main); box-shadow: none; }
+        
+        .streak-val { font-size: 3.5rem; font-weight: 700; margin: 0.5rem 0; }
+        
+        /* Session Setup */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+        .goal-btn { background: #27272a; border-radius: 12px; padding: 1rem; text-align: center; cursor: pointer; border: 1px solid #27272a; }
+        .goal-btn.active { border-color: var(--accent); color: var(--accent); }
     </style>
 </head>
 <body>
-    <!-- Needs to be completed with full logic ->
     <div id="dashboard" class="view active">
         <h1>Dopamine Lock</h1>
         <p class="subtitle">Control your impulses. Rebuild discipline.</p>
         <div class="card">
-            <div>Streak</div>
-            <div class="streak">7 Days</div>
+            <div>Current Streak</div>
+            <div class="streak-val">7</div>
+            <div style="color: var(--text-dim);">Days committed</div>
+        </div>
+        <div class="card">
+            <div>Today's Locked Time</div>
+            <div style="font-size: 2rem; font-weight: 600; margin: 0.5rem 0;">4h 12m</div>
         </div>
         <button class="btn" onclick="showView('setup')">Start Lock Session</button>
         <button class="btn btn-secondary" onclick="showView('progress')" style="margin-top:0.5rem">View Progress</button>
     </div>
 
-    <!-- ... rest of screens ... -->
+    <div id="setup" class="view">
+        <h1>New Session</h1>
+        <p class="subtitle">Select your focus area.</p>
+        <div class="grid">
+            <div class="goal-btn">Social</div><div class="goal-btn">Deep Work</div>
+            <div class="goal-btn">Workout</div><div class="goal-btn">Study</div>
+        </div>
+        <button class="btn" onclick="showView('lock')">Start Session</button>
+        <button class="btn btn-secondary" onclick="showView('dashboard')" style="margin-top:0.5rem">Back</button>
+    </div>
+
+    <div id="lock" class="view" style="align-items:center; justify-content:center;">
+        <div style="font-size: 5rem; font-weight: 700; font-variant-numeric: tabular-nums;">59:42</div>
+        <div style="color: var(--text-dim); margin-bottom: 3rem;">Deep Work Session</div>
+        <button class="btn btn-secondary" style="width:auto; padding: 1rem 2rem;">Hold to Cancel</button>
+    </div>
+
+    <div id="progress" class="view">
+        <h1>Activity</h1>
+        <div class="card">
+            <div>Total Locked</div>
+            <div style="font-size: 2rem; font-weight: 700;">48.5 hours</div>
+        </div>
+        <button class="btn btn-secondary" onclick="showView('dashboard')">Back</button>
+    </div>
 
     <script>
         function showView(id) {
