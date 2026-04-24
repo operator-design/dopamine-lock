@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dopamine Lock</title>
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Dopamine%20Lock%22,%22short_name%22:%22Lock%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22#000000%22,%22theme_color%22:%22#000000%22}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">
+    <style>
+        :root {
+            --bg: #000000;
+            --text: #ffffff;
+            --secondary: #666666;
+            --accent: #ffffff;
+            --danger: #ff4444;
+            --grid-empty: #1a1a1a;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            letter-spacing: -0.04em;
+            transition: filter 0.5s ease;
+        }
+
+        body.grayscale { filter: grayscale(100%); }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .view.active { display: flex; }
+
+        /* Typography */
+        h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        p.tagline { font-size: 0.8rem; color: var(--secondary); margin-bottom: 2.5rem; }
+        .stat-label { font-size: 0.7rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 1rem; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; }
+
+        /* Inputs & Controls */
+        input[type="number"] {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 6rem;
+            font-weight: 700;
+            text-align: center;
+            width: 100%;
+            outline: none;
+        }
+        
+        .contract-select {
+            background: #111;
+            border: 1px solid #222;
+            color: var(--text);
+            padding: 1rem;
+            border-radius: 12px;
+            width: 100%;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            appearance: none;
+            text-align: center;
+        }
+
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 280px;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .mode-toggle input { display: none; }
+        .toggle-box { width: 40px; height: 20px; background: #222; border-radius: 20px; position: relative; transition: 0.3s; }
+        .toggle-box::after { content: ''; position: absolute; width: 16px; height: 16px; background: #444; border-radius: 50%; top: 2px; left: 2px; transition: 0.3s; }
+        input:checked + .toggle-box { background: var(--accent); }
+        input:checked + .toggle-box::after { left: 22px; background: #000; }
+
+        .btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 1.2rem 4rem;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 1rem;
+        }
+        .btn:active { transform: scale(0.98); opacity: 0.8; }
+
+        /* Timer View */
+        .timer-display { font-size: 8rem; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 2rem; }
+        .contract-display { font-size: 0.9rem; color: var(--secondary); margin-bottom: 4rem; font-style: italic; }
+        
+        .abort-btn {
+            background: transparent;
+            color: #333;
+            border: 1px solid #222;
+            padding: 0.8rem 2rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            position: relative;
+            overflow: hidden;
+        }
+        .abort-progress { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255, 68, 68, 0.1); width: 0%; }
+
+        /* Stats & Leaderboard */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-bottom: 2rem; }
+        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 2rem 0; }
+        .day { width: 14px; height: 14px; background: var(--grid-empty); border-radius: 2px; }
+        .day.active { background: var(--accent); }
+
+        /* Leaderboard Modal */
+        #leaderboard {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100; display: none;
+            flex-direction: column; align-items: center; padding: 4rem 2rem;
+        }
+        .leader-row { display: flex; justify-content: space-between; width: 100%; padding: 1rem 0; border-bottom: 1px solid #111; }
+
+        /* Punishment Banner */
+        .punishment-banner {
+            background: var(--danger);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Home View -->
+    <div id="home" class="view active">
+        <h1>Control your dopamine.</h1>
+        <p class="tagline">Rebuild your discipline.</p>
+        
+        <div class="stats-grid">
+            <div>
+                <div class="stat-value" id="streak-val">0</div>
+                <div class="stat-label">Current Streak</div>
+            </div>
+            <div>
+                <div class="stat-value" id="best-val">0</div>
+                <div class="stat-label">Best Streak</div>
+            </div>
+        </div>
+
+        <select id="contract" class="contract-select">
+            <option value="Finish deep work">Pre-Commit: Finish deep work</option>
+            <option value="No social media">Pre-Commit: No social media</option>
+            <option value="Finish workout">Pre-Commit: Finish workout</option>
+            <option value="Read 10 pages">Pre-Commit: Read 10 pages</option>
+            <option value="Custom">Custom Contract...</option>
+        </select>
+
+        <input type="number" id="minutes" value="25" min="1" max="999">
+        <div class="stat-label" style="margin-bottom: 2rem;">Minutes</div>
+
+        <label class="mode-toggle">
+            <span>Hard Mode (Monk)</span>
+            <input type="checkbox" id="hard-mode">
+            <div class="toggle-box"></div>
+        </label>
+
+        <label class="mode-toggle">
+            <span>Grayscale Mode</span>
+            <input type="checkbox" id="grayscale-mode" onchange="toggleGrayscale()">
+            <div class="toggle-box"></div>
+        </label>
+
+        <label class="mode-toggle">
+            <span>$5 Penalty (Stripe)</span>
+            <input type="checkbox" id="penalty-mode">
+            <div class="toggle-box"></div>
+        </label>
+
+        <button class="btn" onclick="startLock()">Lock In</button>
+        <button style="background: transparent; color: #666; border: none; margin-top: 2rem; font-size: 0.7rem;" onclick="showLeaderboard()">View Global Leaderboard</button>
+    </div>
+
+    <!-- Timer View -->
+    <div id="timer" class="view">
+        <div class="punishment-banner" id="punishment">⚠️ STREAK AT RISK</div>
+        <div class="timer-display" id="clock">00:00</div>
+        <div class="contract-display" id="contract-text"></div>
+        <button class="abort-btn" onclick="abortLock()">
+            <div class="abort-progress" id="abort-bar"></div>
+            Hold to Abort
+        </button>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard">
+        <h1 style="margin-bottom: 2rem;">Leaderboard</h1>
+        <div id="leader-list" style="width: 100%; max-width: 400px;">
+            <div class="leader-row"><span>User</span><span>Streak</span></div>
+        </div>
+        <button class="btn" onclick="hideLeaderboard()">Close</button>
+    </div>
+
+    <script>
+        // Core functionality placeholder
+        function startLock() {
+            document.getElementById('home').classList.remove('active');
+            document.getElementById('timer').classList.add('active');
+            let mins = document.getElementById('minutes').value;
+            document.getElementById('clock').innerText = mins + ':00';
+            document.getElementById('contract-text').innerText = document.getElementById('contract').value;
+        }
+
+        function toggleGrayscale() {
+            document.body.classList.toggle('grayscale', document.getElementById('grayscale-mode').checked);
+        }
+
+        function showLeaderboard() { document.getElementById('leaderboard').style.display = 'flex'; }
+        function hideLeaderboard() { document.getElementById('leaderboard').style.display = 'none'; }
+    </script>
+</body>
+</html>
